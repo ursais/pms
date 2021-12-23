@@ -121,9 +121,7 @@ class SaleOrderLine(models.Model):
 
     def unlink(self):
         if self.product_id.reservation_ok and self.pms_reservation_id:
-            self.pms_reservation_id.stage_id = self.env.ref(
-                "pms_sale.pms_stage_cancelled", raise_if_not_found=False
-            ).id
+            self.pms_reservation_id.action_cancel()
         return super(SaleOrderLine, self).unlink()
 
     @api.onchange("product_id")

@@ -296,6 +296,15 @@ class PmsReservation(models.Model):
             }
         )
 
+    def action_cancel(self):
+        self.write(
+            {
+                "stage_id": self.env.ref(
+                    "pms_sale.pms_stage_cancelled", raise_if_not_found=False
+                ).id
+            }
+        )
+
     def action_view_invoices(self):
         for reservation in self:
             action = self.env.ref("account.action_move_out_invoice_type").read()[0]
