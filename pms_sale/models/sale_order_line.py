@@ -28,6 +28,11 @@ class SaleOrderLine(models.Model):
         # we call this to force update the default name
         self.product_id_change()
 
+    @api.onchange("property_id")
+    def _onchange_property_id(self):
+        if self.property_id and self.property_id.analytic_id:
+            self.order_id.analytic_account_id = self.property_id.analytic_id.id
+
     def get_sale_order_line_multiline_description_sale(self, product):
         if self.reservation_id:
             return (
@@ -63,6 +68,8 @@ class SaleOrderLine(models.Model):
             reservation = self._create_pms_reservation(values, reservation_vals)
             if reservation:
                 rec.pms_reservation_id = reservation.id
+        if values.get("property_id"):
+            rec.order_id.analytic_account_id = rec.property_id.analytic_id.id
         return rec
 
     def write(self, values):
@@ -93,6 +100,8 @@ class SaleOrderLine(models.Model):
             reservation = self._create_pms_reservation(values, reservation_vals)
             if reservation:
                 self.pms_reservation_id = reservation.id
+        if values.get("property_id"):
+            self.order_id.analytic_account_id = self.property_id.analytic_id.id
         return rec
 
     def _create_pms_reservation(self, values, reservation_vals):
