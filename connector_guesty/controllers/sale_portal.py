@@ -33,12 +33,16 @@ class SaleCustomerPortal(CustomerPortal):
                     ).id,
                 ]
 
-                reservation = request.env["pms.reservation"].search(
-                    [
-                        ("sale_order_id", "=", int(order_id)),
-                        ("stage_id", "in", state_ids),
-                    ],
-                    limit=1,
+                reservation = (
+                    request.env["pms.reservation"]
+                    .sudo()
+                    .search(
+                        [
+                            ("sale_order_id", "=", int(order_id)),
+                            ("stage_id", "in", state_ids),
+                        ],
+                        limit=1,
+                    )
                 )
 
                 if reservation:
