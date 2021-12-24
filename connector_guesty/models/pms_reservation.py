@@ -16,6 +16,14 @@ class PmsReservation(models.Model):
 
     guesty_id = fields.Char()
 
+    @api.constrains("property_id", "stage_id", "start", "stop")
+    def _check_no_of_reservations(self):
+        if self.env.context.get("ignore_overlap"):
+            return
+
+        # noinspection PyProtectedMember
+        return super(PmsReservation, self)._check_no_of_reservations()
+
     @api.model
     def create(self, values):
         res = super(PmsReservation, self).create(values)
@@ -25,12 +33,11 @@ class PmsReservation(models.Model):
         res.with_delay().guesty_push_reservation()
         return res
 
-    @api.constrains("property_id", "stage_id", "start", "stop")
-    def _check_no_of_reservations(self):
-        if self.env.context.get("ignore_overlap"):
-            return
-
-        return super(PmsReservation, self)._check_no_of_reservations()
+    def write(self, values):
+        res = super(PmsReservation, self).write(values)
+        if self.guesty_id and not self.env.context.get("ignore_guesty_push", False):
+            self.with_delay().guesty_push_reservation_update()
+        return res
 
     def action_book(self):
         res = super(PmsReservation, self).action_book()
@@ -38,31 +45,29 @@ class PmsReservation(models.Model):
             if not res:
                 raise UserError(_("Something went wrong"))
 
-            # Validate data
-            if not self.property_id.guesty_id:
-                raise ValidationError(_("Property not linked to guesty"))
-
-            # Validate Dates
-            real_stop_date = self.stop - datetime.timedelta(days=1)
-            calendar_dates = self.property_id.guesty_get_calendars(
-                self.start, real_stop_date
-            )
-
-            if any([calendar["status"] != "available" for calendar in calendar_dates]):
-                raise ValidationError(_("Dates for this reservation are not available"))
+            self.guesty_check_availability()
 
             # Send to guesty
-            self.with_delay().guesty_push_reservation_reserve()
+            self.guesty_push_reservation_reserve()
         return res
+
+    def action_confirm(self):
+        return super(PmsReservation, self).action_confirm()
 
     def action_cancel(self):
         res = super(PmsReservation, self).action_cancel()
         if self.guesty_id:
-            self.with_delay().guesty_push_reservation_cancel()
+            self.guesty_push_reservation_cancel()
         return res
 
-    def action_search_customer(self):
-        self.guesty_search_customer()
+    def guesty_check_availability(self):
+        real_stop_date = self.stop - datetime.timedelta(days=1)
+        calendar_dates = self.property_id.guesty_get_calendars(
+            self.start, real_stop_date
+        )
+
+        if any([calendar["status"] != "available" for calendar in calendar_dates]):
+            raise ValidationError(_("Dates for this reservation are not available"))
 
     def guesty_push_reservation_cancel(self):
         body = {
@@ -75,36 +80,39 @@ class PmsReservation(models.Model):
         )
 
         if not success:
-            self.message_post(body="Reservations cannot be canceled")
-            raise UserError("Unable to cancel reservation")
+            self.message_post(body=_("Reservations cannot be canceled"))
+            raise UserError(_("Unable to cancel reservation"))
 
-        self.message_post(body="Reservation cancelled successfully on guesty!")
+        self.message_post(body=_("Reservation cancelled successfully on guesty!"))
 
     def guesty_push_reservation_reserve(self):
-        utc = pytz.UTC
-        tz = pytz.timezone(self.property_id.tz or "America/Mexico_City")
-        checkin_localized = utc.localize(self.start).astimezone(tz)
-        checkout_localized = utc.localize(self.stop).astimezone(tz)
-        body = {
-            "status": "reserved",
-            "checkInDateLocalized": checkin_localized.strftime("%Y-%m-%d"),
-            "checkOutDateLocalized": checkout_localized.strftime("%Y-%m-%d"),
-        }
-
         backend = self.env.company.guesty_backend_id
+        body = self.parse_push_reservation_data(backend)
+        body["status"] = "reserved"
+
         success, result = backend.call_put_request(
             url_path="reservations/{}".format(self.guesty_id), body=body
         )
 
         if not success:
-            self.message_post(body="Reservation cannot be reserved")
-            raise UserError("Unable to reserve reservation")
+            raise UserError(_("Unable to reserve reservation"))
 
-        self.message_post(body="Reservation reserved successfully on guesty!")
+        self.message_post(body=_("Reservation reserved successfully on guesty!"))
+
+    def guesty_push_reservation_update(self):
+        backend = self.env.company.guesty_backend_id
+        if not backend:
+            raise ValidationError(_("No backend defined"))
+
+        body = self.parse_push_reservation_data(backend)
+        success, res = backend.call_put_request(
+            url_path="reservations/{}".format(self.guesty_id), body=body
+        )
+        if not success:
+            raise UserError(_("Unable to send to guesty"))
 
     def guesty_push_reservation(self):
         backend = self.env.company.guesty_backend_id
-
         if not backend:
             raise ValidationError(_("No backend defined"))
 
@@ -178,26 +186,6 @@ class PmsReservation(models.Model):
             )
 
         return True
-
-    def guesty_map_reservation_status(self, status):
-        if status == "inquiry":
-            stage_id = self.env.ref("pms_sale.pms_stage_new", raise_if_not_found=False)
-        elif status == "reserved":
-            stage_id = self.env.ref(
-                "pms_sale.pms_stage_booked", raise_if_not_found=False
-            )
-        elif status == "confirmed":
-            stage_id = self.env.ref(
-                "pms_sale.pms_stage_confirmed", raise_if_not_found=False
-            )
-        elif status in ["canceled", "declined", "expired", "closed"]:
-            stage_id = self.env.ref(
-                "pms_sale.pms_stage_cancelled", raise_if_not_found=False
-            )
-        else:
-            stage_id = self.env.ref("pms_sale.pms_stage_new", raise_if_not_found=False)
-
-        return stage_id
 
     def guesty_parse_reservation(self, reservation, backend):
         guesty_id = reservation.get("_id")
