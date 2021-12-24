@@ -52,7 +52,17 @@ class PmsReservation(models.Model):
         return res
 
     def action_confirm(self):
-        return super(PmsReservation, self).action_confirm()
+        res = super(PmsReservation, self).action_confirm()
+        if not self.env.context.get("ignore_guesty_push", False):
+            if not res:
+                raise UserError(_("Something went wrong"))
+
+            status = self.guesty_get_status()
+            if status != "reserved":
+                raise ValidationError(_("Unable to confirm reservation"))
+            # Send to guesty
+            self.guesty_push_reservation_confirm()
+        return res
 
     def action_cancel(self):
         res = super(PmsReservation, self).action_cancel()
@@ -68,6 +78,18 @@ class PmsReservation(models.Model):
 
         if any([calendar["status"] != "available" for calendar in calendar_dates]):
             raise ValidationError(_("Dates for this reservation are not available"))
+
+    def guesty_get_status(self):
+        backend = self.env.company.guesty_backend_id
+        success, result = backend.call_get_request(
+            url_path="reservations/{}".format(self.guesty_id),
+            params={"fields": ", ".join(["status"])},
+        )
+
+        if success:
+            return result.get("status")
+        else:
+            raise ValidationError(_("Unable to verify reservation"))
 
     def guesty_push_reservation_cancel(self):
         body = {
@@ -98,6 +120,20 @@ class PmsReservation(models.Model):
             raise UserError(_("Unable to reserve reservation"))
 
         self.message_post(body=_("Reservation reserved successfully on guesty!"))
+
+    def guesty_push_reservation_confirm(self):
+        backend = self.env.company.guesty_backend_id
+        body = self.parse_push_reservation_data(backend)
+        body["status"] = "confirmed"
+
+        success, result = backend.call_put_request(
+            url_path="reservations/{}".format(self.guesty_id), body=body
+        )
+
+        if not success:
+            raise UserError(_("Unable to confirm reservation"))
+
+        self.message_post(body=_("Reservation confirmed successfully on guesty!"))
 
     def guesty_push_reservation_update(self):
         backend = self.env.company.guesty_backend_id
