@@ -360,7 +360,7 @@
         <field name="view_mode">timeline,kanban,calendar,tree,form</field>
     </record>
 
-    <record id="action_board_reservation_window" model="ir.actions.act_window">
+    <record id="action_sale_reservation" model="ir.actions.act_window">
         <field name="name">Reservations</field>
         <field name="res_model">pms.reservation</field>
         <field name="view_mode">timeline</field>

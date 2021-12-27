@@ -194,14 +194,14 @@ class PMSConfigurator(models.TransientModel):
                 )
             if guest_list:
                 result.update({"guest_ids": guest_list})
-        ref_id = self.env.ref("pms_sale.action_board_reservation_window")
-        timline_url = "%s/web?#action=%s&model=pms.reservation&view_type=schedule" % (
+        ref_id = self.env.ref("pms_sale.action_sale_reservation")
+        timeline_url = "%s/web?#action=%s&model=pms.reservation&view_type=schedule" % (
             self.env["ir.config_parameter"].sudo().get_param("web.base.url"),
             ref_id and str(ref_id.id) or "",
         )
         result["timeline_html"] = (
-            "<a class='btn btn-primary' href='%s' alt='Timeline View' target='_blank' >Timeline</a>"
-            % (timline_url)
+            "<a class='btn btn-primary' href='%s' alt='Timeline View' target='_blank'"
+            " >Timeline</a>" % (timeline_url)
         )
         return result
 
