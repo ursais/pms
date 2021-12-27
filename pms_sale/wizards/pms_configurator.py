@@ -153,6 +153,27 @@ class PMSConfigurator(models.TransientModel):
             result.update({"start": fields.Date.today()})
         if not result.get("stop"):
             result.update({"stop": fields.Date.today()})
+        if self._context.get("web_partner_id"):
+            partner_rec = self.env["res.partner"].browse(
+                self._context.get("web_partner_id")
+            )
+            if partner_rec:
+                result.update(
+                    {
+                        "guest_ids": [
+                            (
+                                0,
+                                0,
+                                {
+                                    "partner_id": partner_rec.id,
+                                    "name": partner_rec.name,
+                                    "email": partner_rec.email,
+                                    "phone": partner_rec.phone,
+                                },
+                            )
+                        ]
+                    }
+                )
         guest_list = []
         if self._context.get("sale_line_ine"):
             guest_ids = self.env["pms.reservation.guest"].search_read(
@@ -167,11 +188,12 @@ class PMSConfigurator(models.TransientModel):
                             "partner_id": guest.get("partner_id"),
                             "name": guest.get("name"),
                             "email": guest.get("email"),
-                            "phone": guest.get("email"),
+                            "phone": guest.get("phone"),
                         },
                     )
                 )
-            result.update({"guest_ids": guest_list})
+            if guest_list:
+                result.update({"guest_ids": guest_list})
         ref_id = self.env.ref("pms_sale.action_board_reservation_window")
         timline_url = "%s/web?#action=%s&model=pms.reservation&view_type=schedule" % (
             self.env["ir.config_parameter"].sudo().get_param("web.base.url"),

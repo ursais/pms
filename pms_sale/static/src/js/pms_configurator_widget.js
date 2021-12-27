@@ -41,6 +41,20 @@ odoo.define("pms_sale.product_configurator", function (require) {
             });
         },
 
+        get_parent_partner: function () {
+            var self = this;
+            if (
+                self.getParent() &&
+                self.getParent().getParent() &&
+                self.getParent().getParent().recordData &&
+                self.getParent().getParent().recordData.partner_id &&
+                self.getParent().getParent().recordData.partner_id.res_id
+            ) {
+                return self.getParent().getParent().recordData.partner_id.res_id;
+            }
+            return false;
+        },
+
         /**
          * This method will check if the productId needs configuration or not:
          *
@@ -62,9 +76,14 @@ odoo.define("pms_sale.product_configurator", function (require) {
                     result.length &&
                     result[0].reservation_ok
                 ) {
+                    var web_partner_id = self.get_parent_partner();
                     var result_vals = {
                         default_product_id: productId,
                     };
+                    if (web_partner_id) {
+                        result_vals.web_partner_id = web_partner_id;
+                    }
+
                     if (self.recordData && self.recordData.currency_id) {
                         result_vals.default_currency_id =
                             self.recordData.currency_id.data.id;
@@ -107,6 +126,11 @@ odoo.define("pms_sale.product_configurator", function (require) {
                 if (this.recordData.id) {
                     defaultValues.sale_line_ine = this.recordData.id;
                 }
+                var web_partner_id = this.get_parent_partner();
+                if (web_partner_id) {
+                    defaultValues.web_partner_id = web_partner_id;
+                }
+
                 this._openReservationConfigurator(defaultValues, this.dataPointID);
             } else {
                 this._super.apply(this, arguments);

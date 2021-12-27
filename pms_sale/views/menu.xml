@@ -59,4 +59,13 @@
         parent="pms_sale.menu_config_reservation"
         action="pms_reservation_guest_action"/> -->
 
+    <menuitem
+        id="pms_reservation_timeline"
+        name="Reservations"
+        parent="sale.sale_menu_root"
+        sequence="5"
+        action="action_board_reservation_window"
+        groups="sales_team.group_sale_salesman"
+    />
+
 </odoo>
