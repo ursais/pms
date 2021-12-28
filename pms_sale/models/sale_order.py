@@ -36,5 +36,5 @@ class SaleOrder(models.Model):
                 [("sale_order_id", "=", sale.id)]
             )
             if reservation:
-                reservation.action_book()
+                reservation.action_confirm()
         return res
