@@ -58,7 +58,7 @@ class PmsReservation(models.Model):
                 raise UserError(_("Something went wrong"))
 
             status = self.guesty_get_status()
-            if status != "reserved":
+            if status not in ["inquiry", "reserved"]:
                 raise ValidationError(_("Unable to confirm reservation"))
             # Send to guesty
             self.guesty_push_reservation_confirm()

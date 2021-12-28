@@ -287,13 +287,13 @@ msgstr "No se definió ningúna empresa"
 #: code:addons/connector_guesty/models/sale_order_line.py:0
 #, python-format
 msgid "No listing defined on property"
-msgstr "No anuncio definido en la propiedad"
+msgstr "No hay un listing definido en la propiedad"
 
 #. module: connector_guesty
 #: code:addons/connector_guesty/models/sale_order_line.py:0
 #, python-format
 msgid "No property defined on SO for reservation"
-msgstr "No propiedad definida en la reserva del pedido"
+msgstr "No hay una propiedad definida en la reserva del pedido"
 
 #. module: connector_guesty
 #: model:ir.model.fields,field_description:connector_guesty.field_res_partner_guesty__partner_id
@@ -324,7 +324,7 @@ msgstr "Publicar en Guesty"
 #. module: connector_guesty
 #: model:ir.model,name:connector_guesty.model_pms_reservation
 msgid "Reservation"
-msgstr "Reserva"
+msgstr "Reservación"
 
 #. module: connector_guesty
 #: model:ir.model.fields,field_description:connector_guesty.field_backend_guesty__reservation_pull_start_date
