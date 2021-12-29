@@ -44,6 +44,7 @@
                                 <group>
                                     <field name="reservation_pull_start_date" />
                                     <field name="cleaning_product_id" />
+                                    <field name="extra_product_id" />
                                 </group>
                             </group>
                         </page>

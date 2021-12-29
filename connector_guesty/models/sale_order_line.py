@@ -2,8 +2,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import logging
 
-from odoo import _, api, models
-from odoo.exceptions import ValidationError
+from odoo import api, models
 
 _log = logging.getLogger(__name__)
 
@@ -17,20 +16,20 @@ class SaleOrderLine(models.Model):
         if self.company_id.guesty_backend_id and self.reservation_id:
             # get calendar data from guesty
             if not self.property_id:
-                raise ValidationError(_("No property defined on SO for reservation"))
+                return
 
             if not self.property_id.guesty_id:
-                raise ValidationError(_("No listing defined on property"))
+                return
 
             if not self.start or not self.stop:
-                raise ValidationError(_("Invalid dates on SO reservation"))
+                return
 
-            # self.env["pms.guesty.calendar"].compute_price(
-            #     self.property_id,
-            #     self.start,
-            #     self.stop,
-            #     self.order_id.currency_id
-            # )
+                # self.env["pms.guesty.calendar"].compute_price(
+                #     self.property_id,
+                #     self.start,
+                #     self.stop,
+                #     self.order_id.currency_id
+                # )
 
             success, result = self.company_id.guesty_backend_id.call_get_request(
                 url_path="listings/{}/calendar".format(self.property_id.guesty_id),

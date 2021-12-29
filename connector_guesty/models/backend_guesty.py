@@ -23,6 +23,7 @@ class BackendGuesty(models.Model):
     reservation_pull_start_date = fields.Datetime()
 
     cleaning_product_id = fields.Many2one("product.product")
+    extra_product_id = fields.Many2one("product.product")
 
     def check_credentials(self):
         # url to validate the credentials
@@ -115,6 +116,14 @@ class BackendGuesty(models.Model):
                 else:
                     city = hometown
                 body_payload["city"] = city
+
+            if "city" not in body_payload:
+                body_payload["city"] = "ND"
+
+            if "country_id" not in body_payload:
+                body_payload["country_id"] = self.env.ref(
+                    "base.mx", raise_if_not_found=False
+                ).id
 
             base_partner = self.env["res.partner"].create(body_payload)
 

@@ -30,7 +30,19 @@ class PmsReservation(models.Model):
         if not res.property_id.guesty_id:
             raise ValidationError(_("Property not linked to guesty"))
 
-        res.with_delay().guesty_push_reservation()
+        # Set the automated workflow to create and validate the invoice
+        if res.sale_order_id and not res.sale_order_id.workflow_process_id:
+            res.sale_order_id.with_context({"ignore_guesty_push": True}).write(
+                {
+                    "workflow_process_id": self.env.ref(
+                        "sale_automatic_workflow.automatic_validation"
+                    ).id
+                }
+            )
+
+        if not self.env.context.get("ignore_guesty_push", False):
+            res.with_delay().guesty_push_reservation()
+
         return res
 
     def write(self, values):
@@ -66,7 +78,7 @@ class PmsReservation(models.Model):
 
     def action_cancel(self):
         res = super(PmsReservation, self).action_cancel()
-        if self.guesty_id:
+        if self.guesty_id and not self.env.context.get("ignore_guesty_push", False):
             self.guesty_push_reservation_cancel()
         return res
 
@@ -147,6 +159,10 @@ class PmsReservation(models.Model):
         if not success:
             raise UserError(_("Unable to send to guesty"))
 
+    # def guesty_push_reservation_extra_lines(self):
+    #     if self.guesty_id and self.sale_order_id and self.env.company.guesty_backend_id:
+    #         for line in self.sale_order_id.order_line:
+
     def guesty_push_reservation(self):
         backend = self.env.company.guesty_backend_id
         if not backend:
@@ -207,7 +223,7 @@ class PmsReservation(models.Model):
             reservation_id = (
                 self.env["pms.reservation"]
                 .sudo()
-                .with_context({"ignore_overlap": True})
+                .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
                 .create(reservation)
             )
 
@@ -217,9 +233,10 @@ class PmsReservation(models.Model):
 
             reservation_id.build_so(invoice_lines, no_nights, status, backend)
         else:
-            reservation_id.sudo().with_context({"ignore_overlap": True}).write(
-                reservation
-            )
+            _log.info("Update reservation: {}".format(reservation_id.guesty_id))
+            reservation_id.sudo().with_context(
+                {"ignore_overlap": True, "ignore_guesty_push": True}
+            ).write(reservation)
 
         return True
 
@@ -265,6 +282,7 @@ class PmsReservation(models.Model):
             "checkInDateLocalized": checkin_localized.strftime("%Y-%m-%d"),
             "checkOutDateLocalized": checkout_localized.strftime("%Y-%m-%d"),
             "guestId": customer.guesty_id,
+            "money": {},
         }
 
         reservation_line = self.sale_order_id.order_line.filtered(
@@ -283,6 +301,25 @@ class PmsReservation(models.Model):
         if cleaning_line and reservation_line:
             body["money"]["fareCleaning"] = cleaning_line.price_subtotal
 
+        extra_lines = self.sale_order_id.order_line.filtered(
+            lambda s: not s.reservation_ok
+            and s.id != cleaning_line.id
+            and not s.guesty_is_locked
+        )
+
+        if extra_lines:
+            for line in extra_lines:
+                body["money"]["invoiceItems"] = [
+                    {
+                        "type": "MANUAL",
+                        "title": line.name,
+                        "amount": line.price_subtotal,
+                        "currency": self.sale_order_id.currency_id.name,
+                    }
+                ]
+        else:
+            body["money"]["invoiceItems"] = []
+
         return body
 
     def build_so(self, guesty_invoice_items, no_nights, status, backend):
@@ -295,13 +332,15 @@ class PmsReservation(models.Model):
         if not backend:
             raise ValidationError(_("No Backend defined"))
 
-        if self.sale_order_id:
-            return self.sale_order_id
+        # if self.sale_order_id:
+        #     return self.sale_order_id
 
         if status in ["inquiry", "reserved", "confirmed"]:
             order_lines = []
             for line in guesty_invoice_items:
-                if line.get("type") == "ACCOMMODATION_FARE":
+                if line.get("type") in ["TAX", "CITY_TAX"]:
+                    continue  # ignore the tax items
+                elif line.get("type") == "ACCOMMODATION_FARE":
                     reservation_type = self.property_id.reservation_ids.filtered(
                         lambda s: s.is_guesty_price
                     )
@@ -332,22 +371,47 @@ class PmsReservation(models.Model):
                             "price_unit": line.get("amount"),
                         }
                     )
+                else:
+                    order_lines.append(
+                        {
+                            "guesty_is_locked": line.get("isLocked") or False,
+                            "product_id": backend.sudo().extra_product_id.id,
+                            "name": line.get("title"),
+                            "product_uom_qty": 1,
+                            "price_unit": line.get("amount"),
+                        }
+                    )
 
-            so = (
-                self.env["sale.order"]
-                .sudo()
-                .create(
-                    {
-                        "partner_id": self.partner_id.id,
-                        "order_line": [(0, False, line) for line in order_lines],
-                    }
+            if not self.sale_order_id:
+                so = (
+                    self.env["sale.order"]
+                    .sudo()
+                    .create(
+                        {
+                            "partner_id": self.partner_id.id,
+                            "order_line": [(0, False, line) for line in order_lines],
+                        }
+                    )
                 )
-            )
 
-            self.sudo().write({"sale_order_id": so.id})
+                self.sudo().with_context({"ignore_guesty_push": True}).write(
+                    {"sale_order_id": so.id}
+                )
+            elif self.sale_order_id.state == "draft":
+                updated_lines = [(6, False, False)] + [
+                    (0, False, line) for line in order_lines
+                ]
+                self.sale_order_id.with_context({"ignore_guesty_push": True}).write(
+                    {"order_line": updated_lines}
+                )
 
-            if status in ["reserved", "confirmed"]:
-                so.with_context(
+            if (
+                status in ["reserved", "confirmed"]
+                and self.sale_order_id.state == "draft"
+            ):
+                self.sale_order_id.with_context(
+                    {"ignore_guesty_push": True}
+                ).with_context(
                     {"ignore_guesty_push": True}
                 ).action_confirm()  # confirm the SO -> Reservation booked
 
