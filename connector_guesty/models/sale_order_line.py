@@ -2,13 +2,15 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import logging
 
-from odoo import api, models
+from odoo import api, fields, models
 
 _log = logging.getLogger(__name__)
 
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
+
+    guesty_is_locked = fields.Boolean(default=False)
 
     @api.onchange("product_uom", "product_uom_qty")
     def product_uom_change(self):
