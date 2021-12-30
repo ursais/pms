@@ -38,6 +38,11 @@
                                 string="Download Calendars"
                                 type="object"
                             />
+                            <button
+                                name="download_properties"
+                                string="Sync Property"
+                                type="object"
+                            />
                         </page>
                         <page string="Configuration">
                             <group>

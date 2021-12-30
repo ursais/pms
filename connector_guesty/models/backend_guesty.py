@@ -261,3 +261,40 @@ class BackendGuesty(models.Model):
         else:
             _log.error(result.content)
             return False, None
+
+    def download_properties(self):
+        property_ids = self.env["pms.property"].sudo().search([])
+
+        skip = 0
+        while True:
+            success, res = self.call_get_request(
+                url_path="listings",
+                params={"city": "Ciudad de México"},
+                limit=100,
+                skip=skip,
+            )
+
+            skip += 100
+
+            if success:
+                result = res.get("results", [])
+                for record in result:
+                    property_id = property_ids.filtered(
+                        lambda s: s.ref == record.get("nickname")
+                    )
+                    if property_id and len(property_id) == 1:
+                        property_id.write(
+                            {
+                                "guesty_id": record.get("_id"),
+                                "name": "{} / {}".format(
+                                    record.get("nickname"), record.get("title")
+                                ),
+                            }
+                        )
+                    else:
+                        _log.info("Not found: {}".format(record.get("nickname")))
+
+                if len(result) == 0:
+                    break
+            else:
+                break
