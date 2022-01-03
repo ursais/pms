@@ -224,9 +224,9 @@ class PmsReservation(models.Model):
         if not reservation_id:
             reservation_id = (
                 self.env["pms.reservation"]
-                    .sudo()
-                    .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
-                    .create(reservation)
+                .sudo()
+                .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
+                .create(reservation)
             )
 
             invoice_lines = payload.get("money", {}).get("invoiceItems")
@@ -305,8 +305,8 @@ class PmsReservation(models.Model):
 
         extra_lines = self.sale_order_id.order_line.filtered(
             lambda s: not s.reservation_ok
-                      and s.id != cleaning_line.id
-                      and not s.guesty_is_locked
+            and s.id != cleaning_line.id
+            and not s.guesty_is_locked
         )
 
         if extra_lines:
@@ -414,8 +414,8 @@ class PmsReservation(models.Model):
 
                 currency_id = (
                     self.env["res.currency"]
-                        .sudo()
-                        .search([("name", "=", guesty_currency)])
+                    .sudo()
+                    .search([("name", "=", guesty_currency)])
                 )
 
                 if not currency_id:
@@ -425,8 +425,8 @@ class PmsReservation(models.Model):
 
                 price_list = (
                     self.env["product.pricelist"]
-                        .sudo()
-                        .search([("currency_id", "=", currency_id.id)])
+                    .sudo()
+                    .search([("currency_id", "=", currency_id.id)])
                 )
 
                 if not price_list:
@@ -436,8 +436,8 @@ class PmsReservation(models.Model):
 
                 so = (
                     self.env["sale.order"]
-                        .sudo()
-                        .create(
+                    .sudo()
+                    .create(
                         {
                             "partner_id": self.partner_id.id,
                             "pricelist_id": price_list.id,
