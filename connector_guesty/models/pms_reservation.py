@@ -310,15 +310,16 @@ class PmsReservation(models.Model):
         )
 
         if extra_lines:
+            body["money"]["invoiceItems"]  = []
             for line in extra_lines:
-                body["money"]["invoiceItems"] = [
+                body["money"]["invoiceItems"].append(
                     {
                         "type": "MANUAL",
                         "title": line.name,
                         "amount": line.price_subtotal,
                         "currency": self.sale_order_id.currency_id.name,
                     }
-                ]
+                )
         else:
             body["money"]["invoiceItems"] = []
 
