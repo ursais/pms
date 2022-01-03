@@ -224,9 +224,9 @@ class PmsReservation(models.Model):
         if not reservation_id:
             reservation_id = (
                 self.env["pms.reservation"]
-                .sudo()
-                .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
-                .create(reservation)
+                    .sudo()
+                    .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
+                    .create(reservation)
             )
 
             invoice_lines = payload.get("money", {}).get("invoiceItems")
@@ -305,21 +305,29 @@ class PmsReservation(models.Model):
 
         extra_lines = self.sale_order_id.order_line.filtered(
             lambda s: not s.reservation_ok
-            and s.id != cleaning_line.id
-            and not s.guesty_is_locked
+                      and s.id != cleaning_line.id
+                      and not s.guesty_is_locked
         )
 
         if extra_lines:
-            body["money"]["invoiceItems"]  = []
+            body["money"]["invoiceItems"] = []
             for line in extra_lines:
-                body["money"]["invoiceItems"].append(
-                    {
-                        "type": "MANUAL",
-                        "title": line.name,
-                        "amount": line.price_subtotal,
-                        "currency": self.sale_order_id.currency_id.name,
-                    }
-                )
+                line_amount = line.price_subtotal
+                line_payload = {
+                    "type": "MANUAL",
+                    "title": line.name,
+                    "amount": line_amount,
+                    "currency": self.sale_order_id.currency_id.name,
+                }
+
+                if line.guesty_type:
+                    line_payload["type"] = line.guesty_type
+                if line.guesty_normal_type:
+                    line_payload["normalType"] = line.guesty_normal_type
+                if line.guesty_second_identifier:
+                    line_payload["secondIdentifier"] = line.guesty_second_identifier
+
+                body["money"]["invoiceItems"].append(line_payload)
         else:
             body["money"]["invoiceItems"] = []
 
@@ -378,13 +386,19 @@ class PmsReservation(models.Model):
                         }
                     )
                 else:
+                    line_amount = line.get("amount")
+                    line_amount = float(line_amount)
+
                     order_lines.append(
                         {
                             "guesty_is_locked": line.get("isLocked") or False,
+                            "guesty_type": line.get("type"),
+                            "guesty_normal_type": line.get("normalType"),
+                            "guesty_second_identifier": line.get("secondIdentifier"),
                             "product_id": backend.sudo().extra_product_id.id,
                             "name": line.get("title"),
                             "product_uom_qty": 1,
-                            "price_unit": line.get("amount"),
+                            "price_unit": line_amount,
                         }
                     )
 
@@ -400,8 +414,8 @@ class PmsReservation(models.Model):
 
                 currency_id = (
                     self.env["res.currency"]
-                    .sudo()
-                    .search([("name", "=", guesty_currency)])
+                        .sudo()
+                        .search([("name", "=", guesty_currency)])
                 )
 
                 if not currency_id:
@@ -411,8 +425,8 @@ class PmsReservation(models.Model):
 
                 price_list = (
                     self.env["product.pricelist"]
-                    .sudo()
-                    .search([("currency_id", "=", currency_id.id)])
+                        .sudo()
+                        .search([("currency_id", "=", currency_id.id)])
                 )
 
                 if not price_list:
@@ -422,8 +436,8 @@ class PmsReservation(models.Model):
 
                 so = (
                     self.env["sale.order"]
-                    .sudo()
-                    .create(
+                        .sudo()
+                        .create(
                         {
                             "partner_id": self.partner_id.id,
                             "pricelist_id": price_list.id,

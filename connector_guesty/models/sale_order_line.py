@@ -11,6 +11,9 @@ class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
     guesty_is_locked = fields.Boolean(default=False)
+    guesty_type = fields.Char()
+    guesty_normal_type = fields.Char()
+    guesty_second_identifier = fields.Char()
 
     @api.onchange("product_uom", "product_uom_qty")
     def product_uom_change(self):
