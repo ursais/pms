@@ -53,7 +53,9 @@ class PmsReservation(models.Model):
 
     def action_book(self):
         res = super(PmsReservation, self).action_book()
+        _log.info("Booking on guesty.....")
         if not self.env.context.get("ignore_guesty_push", False):
+            _log.info("Allowed: Booking on guesty.....")
             if not res:
                 raise UserError(_("Something went wrong"))
 
@@ -222,9 +224,9 @@ class PmsReservation(models.Model):
         if not reservation_id:
             reservation_id = (
                 self.env["pms.reservation"]
-                .sudo()
-                .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
-                .create(reservation)
+                    .sudo()
+                    .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
+                    .create(reservation)
             )
 
             invoice_lines = payload.get("money", {}).get("invoiceItems")
@@ -303,8 +305,8 @@ class PmsReservation(models.Model):
 
         extra_lines = self.sale_order_id.order_line.filtered(
             lambda s: not s.reservation_ok
-            and s.id != cleaning_line.id
-            and not s.guesty_is_locked
+                      and s.id != cleaning_line.id
+                      and not s.guesty_is_locked
         )
 
         if extra_lines:
@@ -348,12 +350,15 @@ class PmsReservation(models.Model):
                     if not reservation_type:
                         raise ValidationError(_("Missing guesty reservation type"))
 
+                    line_amount = line.get("amount")
+                    line_amount = float(line_amount)
+                    line_price_unit = line_amount / no_nights
                     order_lines.append(
                         {
                             "product_id": reservation_type.product_id.id,
                             "name": reservation_type.display_name,
                             "product_uom_qty": no_nights,
-                            "price_unit": line.get("amount"),
+                            "price_unit": line_price_unit,
                             "property_id": self.property_id.id,
                             "reservation_id": reservation_type.id,
                             "pms_reservation_id": self.id,
@@ -383,12 +388,32 @@ class PmsReservation(models.Model):
                     )
 
             if not self.sale_order_id:
+                accommodation_line = [line for line in guesty_invoice_items if line.get("type") == "ACCOMMODATION_FARE"]
+                guesty_currency = accommodation_line[0].get("currency")
+                if not guesty_currency:
+                    guesty_currency = "USD"
+
+                currency_id = self.env["res.currency"].sudo().search([
+                    ("name", "=", guesty_currency)
+                ])
+
+                if not currency_id:
+                    raise ValidationError(_("Currency: {} Not found").format(guesty_currency))
+
+                price_list = self.env["product.pricelist"].sudo().search([
+                    ("currency_id", "=", currency_id.id)
+                ])
+
+                if not price_list:
+                    raise ValidationError(_("No pricelist found for {}").format(guesty_currency))
+
                 so = (
                     self.env["sale.order"]
-                    .sudo()
-                    .create(
+                        .sudo()
+                        .create(
                         {
                             "partner_id": self.partner_id.id,
+                            "pricelist_id": price_list.id,
                             "order_line": [(0, False, line) for line in order_lines],
                         }
                     )
@@ -410,8 +435,6 @@ class PmsReservation(models.Model):
                 and self.sale_order_id.state == "draft"
             ):
                 self.sale_order_id.with_context(
-                    {"ignore_guesty_push": True}
-                ).with_context(
                     {"ignore_guesty_push": True}
                 ).action_confirm()  # confirm the SO -> Reservation booked
 

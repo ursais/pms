@@ -37,7 +37,7 @@ class SaleOrder(models.Model):
 
     def write(self, values):
         res = super().write(values)
-        if not not self.env.context.get("ignore_guesty_push", False):
+        if not self.env.context.get("ignore_guesty_push", False) and "order_line" in values:
             for sale in self:
                 reservation = self.env["pms.reservation"].search(
                     [("sale_order_id", "=", sale.id)]
