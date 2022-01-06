@@ -32,7 +32,7 @@ class SaleOrder(models.Model):
     def write(self, values):
         res = super().write(values)
         if (
-            self.env.company_id.guesty_backend_id
+            self.company_id.guesty_backend_id
             and not self.env.context.get("ignore_guesty_push", False)
             and "order_line" in values
         ):
