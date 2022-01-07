@@ -61,15 +61,14 @@ class PmsReservation(models.Model):
 
     def action_book(self):
         res = super(PmsReservation, self).action_book()
-        if self.env.company.guesty_backend_id:
-            _log.info("Booking on Guesty.....")
-            if not self.env.context.get("ignore_guesty_push", False):
-                _log.info("Allowed: Booking on Guesty.....")
-                if not res:
-                    raise UserError(_("Something went wrong"))
-                self.guesty_check_availability()
-                # Send to Guesty
-                self.guesty_push_reservation_reserve()
+        if self.env.company.guesty_backend_id and not self.env.context.get(
+            "ignore_guesty_push", False
+        ):
+            if not res:
+                raise UserError(_("Something went wrong"))
+            self.guesty_check_availability()
+            # Send to Guesty
+            self.guesty_push_reservation_reserve()
         return res
 
     def action_confirm(self):
@@ -104,6 +103,9 @@ class PmsReservation(models.Model):
 
         if any([calendar["status"] != "available" for calendar in calendar_dates]):
             raise ValidationError(_("Dates for this reservation are not available"))
+
+        _log.info("Dates are available")
+        return True
 
     def guesty_get_status(self):
         backend = self.env.company.guesty_backend_id
