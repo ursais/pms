@@ -53,8 +53,8 @@
                         <field name="reservation_ids" readonly="1">
                             <tree>
                                 <field name="name" />
-                                <field name="start" string="Check In"/>
-                                <field name="stop" string="Check Out"/>
+                                <field name="start" string="Check In" />
+                                <field name="stop" string="Check Out" />
                                 <field name="duration" />
                                 <field name="stage_id" />
                             </tree>
