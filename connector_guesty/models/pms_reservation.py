@@ -27,11 +27,15 @@ class PmsReservation(models.Model):
     @api.model
     def create(self, values):
         res = super(PmsReservation, self).create(values)
-        if not res.property_id.guesty_id:
-            raise ValidationError(_("Property not linked to guesty"))
+        if self.env.company.guesty_backend_id and not res.property_id.guesty_id:
+            raise ValidationError(_("The property is not linked to Guesty."))
 
         # Set the automated workflow to create and validate the invoice
-        if res.sale_order_id and not res.sale_order_id.workflow_process_id:
+        if (
+            self.env.company.guesty_backend_id
+            and res.sale_order_id
+            and not res.sale_order_id.workflow_process_id
+        ):
             res.sale_order_id.with_context({"ignore_guesty_push": True}).write(
                 {
                     "workflow_process_id": self.env.ref(
@@ -39,38 +43,42 @@ class PmsReservation(models.Model):
                     ).id
                 }
             )
-
-        if not self.env.context.get("ignore_guesty_push", False):
+        if self.env.company.guesty_backend_id and not self.env.context.get(
+            "ignore_guesty_push", False
+        ):
             res.with_delay().guesty_push_reservation()
-
         return res
 
     def write(self, values):
         res = super(PmsReservation, self).write(values)
-        if self.guesty_id and not self.env.context.get("ignore_guesty_push", False):
+        if (
+            self.env.company.guesty_backend_id
+            and self.guesty_id
+            and not self.env.context.get("ignore_guesty_push", False)
+        ):
             self.with_delay().guesty_push_reservation_update()
         return res
 
     def action_book(self):
         res = super(PmsReservation, self).action_book()
-        _log.info("Booking on guesty.....")
-        if not self.env.context.get("ignore_guesty_push", False):
-            _log.info("Allowed: Booking on guesty.....")
-            if not res:
-                raise UserError(_("Something went wrong"))
-
-            self.guesty_check_availability()
-
-            # Send to guesty
-            self.guesty_push_reservation_reserve()
+        if self.env.company.guesty_backend_id:
+            _log.info("Booking on Guesty.....")
+            if not self.env.context.get("ignore_guesty_push", False):
+                _log.info("Allowed: Booking on Guesty.....")
+                if not res:
+                    raise UserError(_("Something went wrong"))
+                self.guesty_check_availability()
+                # Send to Guesty
+                self.guesty_push_reservation_reserve()
         return res
 
     def action_confirm(self):
         res = super(PmsReservation, self).action_confirm()
-        if not self.env.context.get("ignore_guesty_push", False):
+        if self.env.company.guesty_backend_id and not self.env.context.get(
+            "ignore_guesty_push", False
+        ):
             if not res:
                 raise UserError(_("Something went wrong"))
-
             status = self.guesty_get_status()
             if status not in ["inquiry", "reserved"]:
                 raise ValidationError(_("Unable to confirm reservation"))
@@ -80,7 +88,11 @@ class PmsReservation(models.Model):
 
     def action_cancel(self):
         res = super(PmsReservation, self).action_cancel()
-        if self.guesty_id and not self.env.context.get("ignore_guesty_push", False):
+        if (
+            self.env.company.guesty_backend_id
+            and self.guesty_id
+            and not self.env.context.get("ignore_guesty_push", False)
+        ):
             self.guesty_push_reservation_cancel()
         return res
 
@@ -224,9 +236,9 @@ class PmsReservation(models.Model):
         if not reservation_id:
             reservation_id = (
                 self.env["pms.reservation"]
-                    .sudo()
-                    .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
-                    .create(reservation)
+                .sudo()
+                .with_context({"ignore_overlap": True, "ignore_guesty_push": True})
+                .create(reservation)
             )
 
             invoice_lines = payload.get("money", {}).get("invoiceItems")
@@ -305,8 +317,8 @@ class PmsReservation(models.Model):
 
         extra_lines = self.sale_order_id.order_line.filtered(
             lambda s: not s.reservation_ok
-                      and s.id != cleaning_line.id
-                      and not s.guesty_is_locked
+            and s.id != cleaning_line.id
+            and not s.guesty_is_locked
         )
 
         if extra_lines:
@@ -414,8 +426,8 @@ class PmsReservation(models.Model):
 
                 currency_id = (
                     self.env["res.currency"]
-                        .sudo()
-                        .search([("name", "=", guesty_currency)])
+                    .sudo()
+                    .search([("name", "=", guesty_currency)])
                 )
 
                 if not currency_id:
@@ -425,8 +437,8 @@ class PmsReservation(models.Model):
 
                 price_list = (
                     self.env["product.pricelist"]
-                        .sudo()
-                        .search([("currency_id", "=", currency_id.id)])
+                    .sudo()
+                    .search([("currency_id", "=", currency_id.id)])
                 )
 
                 if not price_list:
@@ -436,8 +448,8 @@ class PmsReservation(models.Model):
 
                 so = (
                     self.env["sale.order"]
-                        .sudo()
-                        .create(
+                    .sudo()
+                    .create(
                         {
                             "partner_id": self.partner_id.id,
                             "pricelist_id": price_list.id,
