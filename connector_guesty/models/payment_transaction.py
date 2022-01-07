@@ -19,7 +19,7 @@ class PaymentTransaction(models.Model):
             if sale.state == "cancel":
                 raise ValidationError(_("Order was canceled"))
 
-            if sale.validity_date < datetime.datetime.now():
+            if sale.validity_date and sale.validity_date < datetime.datetime.now():
                 raise ValidationError(_("Order was expired"))
 
             reservation_id = (
