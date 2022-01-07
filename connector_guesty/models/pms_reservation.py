@@ -27,11 +27,15 @@ class PmsReservation(models.Model):
     @api.model
     def create(self, values):
         res = super(PmsReservation, self).create(values)
-        if not res.property_id.guesty_id:
-            raise ValidationError(_("Property not linked to guesty"))
+        if self.env.company.guesty_backend_id and not res.property_id.guesty_id:
+            raise ValidationError(_("The property is not linked to Guesty."))
 
         # Set the automated workflow to create and validate the invoice
-        if res.sale_order_id and not res.sale_order_id.workflow_process_id:
+        if (
+            self.env.company.guesty_backend_id
+            and res.sale_order_id
+            and not res.sale_order_id.workflow_process_id
+        ):
             res.sale_order_id.with_context({"ignore_guesty_push": True}).write(
                 {
                     "workflow_process_id": self.env.ref(
@@ -39,35 +43,41 @@ class PmsReservation(models.Model):
                     ).id
                 }
             )
-
-        if not self.env.context.get("ignore_guesty_push", False):
+        if self.env.company.guesty_backend_id and not self.env.context.get(
+            "ignore_guesty_push", False
+        ):
             res.with_delay().guesty_push_reservation()
-
         return res
 
     def write(self, values):
         res = super(PmsReservation, self).write(values)
-        if self.guesty_id and not self.env.context.get("ignore_guesty_push", False):
+        if (
+            self.env.company.guesty_backend_id
+            and self.guesty_id
+            and not self.env.context.get("ignore_guesty_push", False)
+        ):
             self.with_delay().guesty_push_reservation_update()
         return res
 
     def action_book(self):
         res = super(PmsReservation, self).action_book()
-        if not self.env.context.get("ignore_guesty_push", False):
+        if self.env.company.guesty_backend_id and not self.env.context.get(
+            "ignore_guesty_push", False
+        ):
             if not res:
                 raise UserError(_("Something went wrong"))
-
             self.guesty_check_availability()
-            # Send to guesty
+            # Send to Guesty
             self.guesty_push_reservation_reserve()
         return res
 
     def action_confirm(self):
         res = super(PmsReservation, self).action_confirm()
-        if not self.env.context.get("ignore_guesty_push", False):
+        if self.env.company.guesty_backend_id and not self.env.context.get(
+            "ignore_guesty_push", False
+        ):
             if not res:
                 raise UserError(_("Something went wrong"))
-
             status = self.guesty_get_status()
             if status not in ["inquiry", "reserved"]:
                 raise ValidationError(_("Unable to confirm reservation"))
@@ -77,7 +87,11 @@ class PmsReservation(models.Model):
 
     def action_cancel(self):
         res = super(PmsReservation, self).action_cancel()
-        if self.guesty_id and not self.env.context.get("ignore_guesty_push", False):
+        if (
+            self.env.company.guesty_backend_id
+            and self.guesty_id
+            and not self.env.context.get("ignore_guesty_push", False)
+        ):
             self.guesty_push_reservation_cancel()
         return res
 
