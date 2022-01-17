@@ -286,6 +286,10 @@ class PmsReservation(models.Model):
         }
 
     def parse_push_reservation_data(self, backend):
+        guesty_listing_price = self.property_id.reservation_ids.filtered(
+            lambda s: s.is_guesty_price
+        )
+
         customer = backend.guesty_search_create_customer(self.partner_id)
 
         utc = pytz.UTC
@@ -305,9 +309,15 @@ class PmsReservation(models.Model):
             lambda s: s.reservation_ok
         )
         if reservation_line:
+            fare_accomodation = self.sale_order_id.currency_id._convert(
+                reservation_line.price_subtotal,
+                guesty_listing_price.currency_id,
+                self.sale_order_id.company_id,
+                self.sale_order_id.date_order,
+            )
             body["money"] = {
-                "fareAccommodation": reservation_line.price_subtotal,
-                "currency": self.sale_order_id.currency_id.name,
+                "fareAccommodation": fare_accomodation,
+                "currency": guesty_listing_price.currency_id.name,
             }
 
         cleaning_line = self.sale_order_id.order_line.filtered(
@@ -315,7 +325,13 @@ class PmsReservation(models.Model):
         )
 
         if cleaning_line and reservation_line:
-            body["money"]["fareCleaning"] = cleaning_line.price_subtotal
+            fare_cleaning = self.sale_order_id.currency_id._convert(
+                cleaning_line.price_subtotal,
+                guesty_listing_price.currency_id,
+                self.sale_order_id.company_id,
+                self.sale_order_id.date_order,
+            )
+            body["money"]["fareCleaning"] = fare_cleaning
 
         extra_lines = self.sale_order_id.order_line.filtered(
             lambda s: not s.reservation_ok
@@ -326,12 +342,18 @@ class PmsReservation(models.Model):
         if extra_lines:
             body["money"]["invoiceItems"] = []
             for line in extra_lines:
-                line_amount = line.price_subtotal
+                fare_extra = self.sale_order_id.currency_id._convert(
+                    line.price_subtotal,
+                    guesty_listing_price.currency_id,
+                    self.sale_order_id.company_id,
+                    self.sale_order_id.date_order,
+                )
+
                 line_payload = {
                     "type": "MANUAL",
                     "title": line.name,
-                    "amount": line_amount,
-                    "currency": self.sale_order_id.currency_id.name,
+                    "amount": fare_extra,
+                    "currency": guesty_listing_price.currency_id.name,
                 }
 
                 if line.guesty_type:
@@ -490,3 +512,12 @@ class PmsReservation(models.Model):
             )
 
             self.write({"stage_id": stage_id.id})
+
+    def action_view_guesty_reservation(self):
+        if self.guesty_id:
+            url = "{}/reservations/{}/summary".format(
+                self.env.company.guesty_backend_id.base_url, self.guesty_id
+            )
+            return {"type": "ir.actions.act_url", "url": url, "target": "new"}
+        else:
+            raise UserError(_("Unable to load external url"))

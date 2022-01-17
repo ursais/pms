@@ -25,6 +25,8 @@ class BackendGuesty(models.Model):
     cleaning_product_id = fields.Many2one("product.product")
     extra_product_id = fields.Many2one("product.product")
 
+    base_url = fields.Char(default="https://app-sandbox.guesty.com", required=True)
+
     def check_credentials(self):
         # url to validate the credentials
         # this endpoint will search a list of users, it may be empty if the api key
