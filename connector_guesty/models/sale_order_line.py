@@ -16,7 +16,12 @@ class SaleOrderLine(models.Model):
     guesty_second_identifier = fields.Char()
 
     def _get_display_price(self, product):
-        if self.reservation_ok and self.start and self.stop:
+        if (
+            self.company_id.guesty_backend_id
+            and self.reservation_ok
+            and self.start
+            and self.stop
+        ):
             success, result = self.sudo().company_id.guesty_backend_id.call_get_request(
                 url_path="listings/{}/calendar".format(
                     self.sudo().property_id.guesty_id
@@ -50,8 +55,6 @@ class SaleOrderLine(models.Model):
                     self.order_id.company_id,
                     self.order_id.date_order,
                 )
-
                 return price_currency
-
         # noinspection PyProtectedMember
         return super()._get_display_price(product)
