@@ -90,7 +90,7 @@ class SaleOrderLine(models.Model):
                 reserv_vals.update({"stop": values.get("stop")})
             if values.get("guest_ids"):
                 reserv_vals.update({"guest_ids": values.get("guest_ids")})
-            self.pms_reservation_id.write(reserv_vals)
+            self.pms_reservation_id.sudo().write(reserv_vals)
         if (
             values.get("product_id")
             or (
@@ -124,7 +124,7 @@ class SaleOrderLine(models.Model):
                     "guest_ids": values.get("guest_ids") or False,
                 }
             )
-            reservation = self.env["pms.reservation"].create(reservation_vals)
+            reservation = self.env["pms.reservation"].sudo().create(reservation_vals)
         return reservation
 
     def unlink(self):
