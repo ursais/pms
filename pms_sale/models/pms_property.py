@@ -50,4 +50,4 @@ class PmsProperty(models.Model):
             # Remove all the properties with reservations in the date range to only
             # show the ones available
             domain += [("id", "not in", property_ids.ids)]
-        return self.search_read(domain, ["ref"])
+        return self.search_read(domain, ["ref", "name"])

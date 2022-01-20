@@ -72,10 +72,6 @@ odoo.define("pms_sale.timeline", function (require) {
                     $filter_reservation
                         .find(".oe_timeline_select_city")
                         .append(newOption, undefined);
-                    console.log(
-                        "?$filter_reservation$filter_reservation",
-                        $filter_reservation.find(".oe_timeline_text_datepicker")
-                    );
                 });
                 this.$el.find(".oe_timeline_buttons").append($filter_reservation);
                 $filter_reservation
@@ -184,7 +180,7 @@ odoo.define("pms_sale.timeline", function (require) {
                                         self.properties[0][n].id ===
                                         self.property_ids[u]
                                     ) {
-                                        user_name = self.properties[0][n].ref;
+                                        user_name = self.properties[0][n].ref || self.properties[0][n].name;
                                     }
                                 }
                                 var is_available = false;
