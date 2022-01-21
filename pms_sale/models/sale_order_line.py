@@ -78,7 +78,7 @@ class SaleOrderLine(models.Model):
             reserv_vals = {}
             if values.get(
                 "property_id"
-            ) and self.pms_reservation_id.property_id != values.get("property_id"):
+            ) and self.pms_reservation_id.property_id.id != values.get("property_id"):
                 reserv_vals.update({"property_id": values.get("property_id")})
             if values.get("start") and self.pms_reservation_id.start != values.get(
                 "start"
@@ -93,13 +93,9 @@ class SaleOrderLine(models.Model):
             self.pms_reservation_id.sudo().write(reserv_vals)
         if (
             values.get("product_id")
-            or (
-                values.get("reservation_id")
-                and values.get("property_id")
-                and not self.pms_reservation_id
-            )
+            or (values.get("reservation_id") and values.get("property_id"))
             and self.product_id.reservation_ok
-        ):
+        ) and not self.pms_reservation_id:
             reservation_vals = {
                 "partner_id": self.order_id.partner_id.id,
                 "sale_order_id": self.order_id.id,
@@ -128,9 +124,9 @@ class SaleOrderLine(models.Model):
         return reservation
 
     def unlink(self):
-        for product in self.product_id:
-            if product.reservation_ok and self.pms_reservation_id:
-                self.pms_reservation_id.action_cancel()
+        for line in self:
+            if line.product_id.reservation_ok and line.pms_reservation_id:
+                line.pms_reservation_id.action_cancel()
         return super(SaleOrderLine, self).unlink()
 
     @api.onchange("product_id")
