@@ -8,9 +8,7 @@
         <xpath expr="//tbody[hasclass('sale_tbody')]//tr/t[1]/td[1]" position="inside">
             <td>
                 <t t-if="line.property_id">
-                    <a t-att-href="line.property_id.website_url" target="_blank"><t
-                            t-esc="line.property_id.name"
-                        /></a>
+                    <t t-esc="line.property_id.name" />
                 </t>
             </td>
         </xpath>
