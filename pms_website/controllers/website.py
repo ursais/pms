@@ -1,11 +1,15 @@
 # Copyright (c) 2021 Open Source Integrators
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+import logging
+
 from werkzeug.exceptions import NotFound
 
 from odoo import http
 from odoo.http import request
 
 from odoo.addons.website.controllers.main import QueryURL, Website
+
+_log = logging.getLogger(__name__)
 
 
 class Website(Website):
@@ -17,11 +21,15 @@ class Website(Website):
         sitemap=True,
     )
     def product(self, pms_property, category="", search="", **kwargs):
+        _log.info("==============OK===============")
         if not pms_property.can_access_from_current_website():
             raise NotFound()
+
         return request.render(
             "pms_website.property",
-            self._prepare_property_values(pms_property, category, search, **kwargs),
+            self._prepare_property_values(
+                pms_property.sudo(), category, search, **kwargs
+            ),
         )
 
     def _prepare_property_values(self, pms_property, category, search, **kwargs):
