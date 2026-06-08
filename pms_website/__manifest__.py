@@ -10,6 +10,10 @@
     "author": "Gray Matter Logic, Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "depends": ["pms_base", "website"],
+    "demo": [
+        "demo/pms_website_category.xml",
+        "demo/pms_property.xml",
+    ],
     "data": [
         "security/ir.model.access.csv",
         "data/rule.xml",
