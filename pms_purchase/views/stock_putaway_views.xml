@@ -5,7 +5,7 @@
         <field name="inherit_id" ref="stock.stock_putaway_list" />
         <field name="arch" type="xml">
             <field name="location_out_id" position="attributes">
-                <attribute name="required">method != 'move_to_property'</attribute>
+                <attribute name="required">False</attribute>
             </field>
         </field>
     </record>

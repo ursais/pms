@@ -22,7 +22,7 @@ class PmsProperty(models.Model):
         view_id = self.env.ref("purchase.purchase_order_line_tree").id
         return {
             "name": self.env._("Purchase Order Lines"),
-            "view_mode": "tree",
+            "view_mode": "list",
             "view_id": view_id,
             "res_model": "purchase.order.line",
             "domain": [("id", "in", self.po_line_ids.ids)],

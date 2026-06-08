@@ -10,6 +10,9 @@
     "maintainers": ["max3903"],
     "license": "AGPL-3",
     "depends": ["pms_account", "purchase_stock", "pms_stock"],
+    "demo": [
+        "demo/purchase_order.xml",
+    ],
     "data": [
         "views/purchase_order.xml",
         "views/pms_property.xml",
