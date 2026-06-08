@@ -17,7 +17,12 @@
         "analytic",
         "pms_base",
     ],
+    "demo": [
+        "demo/account_analytic_account.xml",
+    ],
     "data": [
+        "data/analytic_plan.xml",
+        "views/account_analytic_account.xml",
         "views/account_move.xml",
         "views/pms_property.xml",
     ],

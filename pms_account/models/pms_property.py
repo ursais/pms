@@ -12,6 +12,42 @@ class PmsProperty(models.Model):
         string="Analytic Account",
         comodel_name="account.analytic.account",
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        recs = super().create(vals_list)
+        for rec in recs:
+            if not rec.analytic_id:
+                rec._create_analytic_account()
+        return recs
+
+    def write(self, vals):
+        res = super().write(vals)
+        if "name" or "ref" in vals:
+            for rec in self:
+                if rec.analytic_id:
+                    rec.analytic_id.name = rec.name
+                    rec.analytic_id.code = rec.ref
+                else:
+                    rec._create_analytic_account()
+        return res
+
+    def _create_analytic_account(self):
+        plan = self.env.ref(
+            "pms_account.analytic_plan_properties", raise_if_not_found=False
+        )
+        if not plan:
+            return
+        analytic = self.env["account.analytic.account"].create(
+            {
+                "name": self.name,
+                "plan_id": plan.id,
+                "code": self.ref,
+                "property_id": self.id,
+            }
+        )
+        self.analytic_id = analytic.id
+
     invoice_line_ids = fields.Many2many(
         "account.move.line",
         "pms_property_account_move_line_rel",

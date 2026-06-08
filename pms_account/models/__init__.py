@@ -3,8 +3,9 @@
 # Copyright (c) 2021 Gray Matter Logic
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 from . import (
+    account_analytic_account,
     account_move,
     account_move_line,
-    pms_service,
     pms_property,
+    pms_service,
 )
