@@ -29,7 +29,7 @@ class PmsProperty(models.Model):
             rec.contract_count = len(contracts)
 
     def action_view_contracts(self):
-        action = self.env.ref("contract.action_customer_contract").read()[0]
+        action = self.env.ref("contract.action_supplier_contract").read()[0]
         if len(self.contract_ids) > 1:
             action["domain"] = [("id", "in", self.contract_ids.ids)]
         elif self.contract_ids:

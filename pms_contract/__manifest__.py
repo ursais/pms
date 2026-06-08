@@ -6,7 +6,7 @@
     "name": "PMS - Contracts",
     "summary": "Manage contracts related to your properties",
     "version": "19.0.1.0.0",
-    "development_status": "Alpha",
+    "development_status": "Beta",
     "category": "Generic Modules/Property Management System",
     "website": "https://github.com/OCA/pms",
     "author": "Gray Matter Logic, Odoo Community Association (OCA)",
@@ -15,6 +15,9 @@
     "depends": [
         "contract",
         "pms_account",
+    ],
+    "demo": [
+        "demo/contract_contract.xml",
     ],
     "data": [
         "views/pms_service.xml",
