@@ -4,11 +4,15 @@
     "name": "PMS - Stock",
     "summary": "Manage the content of a property.",
     "version": "19.0.1.0.0",
+    "development_status": "Beta",
     "category": "stock",
     "website": "https://github.com/OCA/pms",
     "author": "Gray Matter Logic, Odoo Community Association (OCA)",
     "maintainers": ["Hardik-OSI"],
     "license": "AGPL-3",
     "depends": ["pms_base", "stock"],
+    "demo": [
+        "demo/pms_property.xml",
+    ],
     "data": ["views/pms_property.xml"],
 }
