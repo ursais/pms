@@ -6,7 +6,7 @@
     "name": "PMS - Asset Management",
     "summary": "Manage the assets related to your properties",
     "version": "19.0.1.0.0",
-    "development_status": "Alpha",
+    "development_status": "Beta",
     "category": "Generic Modules/Property Management System",
     "website": "https://github.com/OCA/pms",
     "author": "Gray Matter Logic, Odoo Community Association (OCA)",
@@ -15,6 +15,9 @@
     "depends": [
         "account_asset_management",
         "pms_account",
+    ],
+    "demo": [
+        "demo/account_asset.xml",
     ],
     "data": [
         "views/account_asset.xml",
