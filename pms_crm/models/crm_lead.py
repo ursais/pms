@@ -8,7 +8,7 @@ class CrmLead(models.Model):
 
     property_ids = fields.Many2many(
         "pms.property",
-        string="Properties",
+        string="PMS Properties",
         copy=False,
     )
     property_count = fields.Integer(
