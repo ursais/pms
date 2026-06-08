@@ -14,9 +14,6 @@
     </record>
 
     <record id="pms_base.group_pms_manager" model="res.groups">
-        <field
-            name="implied_ids"
-            eval="[(4, ref('website.group_website_publisher'))]"
-        />
+        <field name="implied_ids" eval="[(4, ref('website.group_website_designer'))]" />
     </record>
 </odoo>

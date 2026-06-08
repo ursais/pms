@@ -4,7 +4,7 @@
     "name": "PMS - Website Sale",
     "summary": "Allow online booking of your properties",
     "version": "19.0.1.0.0",
-    "development_status": "Alpha",
+    "development_status": "Beta",
     "category": "Generic Modules/Property Management System",
     "website": "https://github.com/OCA/pms",
     "author": "Gray Matter Logic, Odoo Community Association (OCA)",
@@ -15,7 +15,15 @@
         "security/ir.model.access.csv",
         "security/pms_website_sale.xml",
         "views/templates.xml",
-        "views/assets.xml",
     ],
+    "assets": {
+        "web.assets_frontend": [
+            "pms_website_sale/static/src/js/pms_property.js",
+            "pms_website_sale/static/src/js/pms_property_booking.js",
+        ],
+        "web.assets_tests": [
+            "pms_website_sale/static/tests/tours/pms_website_sale_tour.js",
+        ],
+    },
     "maintainers": ["max3903"],
 }
