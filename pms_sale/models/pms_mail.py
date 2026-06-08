@@ -17,7 +17,7 @@ class PMSMailScheduler(models.Model):
         "uom.uom",
         string="Unit",
         domain=lambda self: [
-            ("category_id", "=", self.env.ref("uom.uom_categ_wtime").id)
+            ("id", "child_of", self.env.ref("uom.product_uom_hour").id)
         ],
     )
     interval_trigger = fields.Selection(

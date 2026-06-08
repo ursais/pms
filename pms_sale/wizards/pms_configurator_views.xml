@@ -14,17 +14,24 @@
                     <field name="currency_id" invisible="True" />
                     <field
                         name="reservation_id"
-                        invisible="[('property_id', '=', False)]"
-                        required="[('property_id', '!=', False)]"
+                        invisible="not property_id"
+                        required="property_id"
                         domain="[('property_id', '=', property_id), ('currency_id', '=', currency_id)]"
                         options="{'no_open': True, 'no_create': True}"
                     />
                     <field name="product_id" invisible="True" />
+                    <field name="price" invisible="True" />
+                    <field name="existing_reservation_id" invisible="True" />
                 </group>
-                <group col="4">
-                    <field name="start" string="Check In" />
-                    <field name="stop" string="Check Out" />
-                    <field name="duration" invisible="True" />
+                <group>
+                    <field
+                        name="start"
+                        string="Check In / Check Out"
+                        widget="daterange"
+                        options="{'end_date_field': 'stop'}"
+                    />
+                    <field name="stop" invisible="1" />
+                    <field name="duration" invisible="1" />
                 </group>
                 <group>
                     <field name="timeline_html" nolabel="1" />

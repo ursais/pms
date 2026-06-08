@@ -8,12 +8,13 @@ class SaleOrder(models.Model):
     _inherit = "sale.order"
 
     def _compute_reservation_count(self):
-        sale_orders_data = self.env["pms.reservation"].read_group(
-            [("sale_order_id", "in", self.ids)], ["sale_order_id"], ["sale_order_id"]
-        )
         reservation_count_data = {
-            sale_order_data["sale_order_id"][0]: sale_order_data["sale_order_id_count"]
-            for sale_order_data in sale_orders_data
+            sale_order.id: count
+            for sale_order, count in self.env["pms.reservation"]._read_group(
+                [("sale_order_id", "in", self.ids)],
+                ["sale_order_id"],
+                ["__count"],
+            )
         }
         for sale_order in self:
             sale_order.reservation_count = reservation_count_data.get(sale_order.id, 0)
@@ -38,6 +39,6 @@ class SaleOrder(models.Model):
             if reservation:
                 reservation.action_book()
                 # Set reservation confirm when payment is done by payment link
-                if not sale.has_to_be_paid():
+                if not sale._has_to_be_paid():
                     reservation.action_confirm()
         return res

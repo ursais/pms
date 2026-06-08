@@ -12,12 +12,17 @@
     "maintainers": ["max3903"],
     "license": "AGPL-3",
     "depends": ["pms_account", "sale", "web_timeline", "calendar"],
+    "demo": [
+        "demo/res_partner.xml",
+        "demo/pms_property.xml",
+        "demo/pms_property_reservation.xml",
+        "demo/pms_reservation.xml",
+    ],
     "data": [
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
         "data/product_data.xml",
         "data/pms_stage.xml",
-        "views/assets.xml",
         "views/product_views.xml",
         "views/pms_property_reservation.xml",
         "views/pms_mail_views.xml",
@@ -30,5 +35,11 @@
         "views/menu.xml",
         "views/account_move.xml",
     ],
-    "qweb": ["static/src/xml/timeline.xml"],
+    "assets": {
+        "web.assets_backend": [
+            "pms_sale/static/src/js/pms_configurator_controller.esm.js",
+            "pms_sale/static/src/js/pms_sale_product_field.esm.js",
+            "pms_sale/static/src/js/timeline.esm.js",
+        ],
+    },
 }

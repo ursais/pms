@@ -76,6 +76,9 @@ class PmsReservation(models.Model):
         "pms.team", string="Team", related="property_id.team_id", store=True
     )
     property_id = fields.Many2one("pms.property", string="Property")
+    reservation_type_id = fields.Many2one(
+        "pms.property.reservation", string="Reservation Type"
+    )
     sale_order_id = fields.Many2one("sale.order", string="Sales Order")
     sale_order_line_id = fields.Many2one("sale.order.line", string="Sales Order Line")
     invoice_status = fields.Selection(
@@ -145,14 +148,14 @@ class PmsReservation(models.Model):
             reservation.invoice_count = len(invoices)
 
     @api.model
-    def _read_group_stage_ids(self, stages, domain, order):
+    def _read_group_stage_ids(self, stages, domain):
         search_domain = [("stage_type", "=", "reservation")]
         if self.env.context.get("default_team_id"):
             search_domain = [
                 "&",
                 ("team_ids", "in", self.env.context["default_team_id"]),
             ] + search_domain
-        return stages.search(search_domain, order=order)
+        return stages.search(search_domain)
 
     @api.model_create_multi
     def create(self, vals_list):

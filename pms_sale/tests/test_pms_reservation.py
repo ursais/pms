@@ -57,7 +57,7 @@ class TestPMSReservation(SavepointCase):
 
     def test_read_group_stage_ids(self):
         stages = self.env["pms.stage"]
-        stages = self.reservation._read_group_stage_ids(stages, [], False)
+        stages = self.reservation._read_group_stage_ids(stages, [])
         self.assertEqual(len(stages), 6)
 
     def test_onchange_property_id(self):
