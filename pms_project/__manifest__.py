@@ -9,6 +9,9 @@
     "depends": ["pms_base", "project"],
     "author": "Gray Matter Logic, Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/pms",
+    "demo": [
+        "demo/project.xml",
+    ],
     "data": [
         "views/pms_property_views.xml",
         "views/project_task_views.xml",

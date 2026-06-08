@@ -11,5 +11,5 @@ class ProjectTask(models.Model):
         "task_property_rel",
         "task_id",
         "property_id",
-        string="Properties",
+        string="PMS Properties",
     )
